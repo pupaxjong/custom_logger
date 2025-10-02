@@ -161,7 +161,7 @@ def setup_logger(alert_channels=None, alert_keywords=[], alert_prefix='[hahaha@w
             logger.addHandler(alert_handler)
 
         logger.debug('디버그 메시지입니다.')
-        logger.info('애플리케이션 시작')
+        logger.info('Info 메시지입니다.')
         logger.warning('경고 메시지입니다.')
         logger.error('에러 발생! 메시지입니다.')
         logger.critical('치명적인 오류! 메시지입니다.')
