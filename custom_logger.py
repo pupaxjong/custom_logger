@@ -21,6 +21,7 @@ from logging.handlers import TimedRotatingFileHandler
 
 # 전역 로거 객체
 logger = logging.getLogger()
+_LOGGER_INITIALIZED = False 
 
 # colorama 설치 여부 확인
 try:
@@ -67,56 +68,96 @@ class LevelFilter(logging.Filter):
         return record.levelno == self.level
 
 # 알림 핸들러 정의
+# 알림 핸들러 정의 (수정됨)
+# 알림 핸들러 정의 (재귀 방지 필터 추가 완료)
+import logging
+import threading
+import json
+import requests
+
 class AlertHandler(logging.Handler):
+    """
+    알림 핸들러 (Slack, Telegram, Discord)
+    requests 사용, 무한 루프 방지 플래그 적용
+    """
     def __init__(self, alert_channels=None, keywords=None, prefix=None):
         super().__init__()
         self.alert_channels = alert_channels or {}
         self.keywords = keywords or []
         self.prefix = prefix or ""
+        self._sending_lock = threading.Lock()
 
     def emit(self, record):
-        level_name = record.levelname
-        message = self.format(record)
+        # 이미 AlertHandler에서 알림 전송 중이면 무시
+        if getattr(record, "__alert_in_progress", False):
+            return
 
-        # 키워드 필터링
-        if not self.keywords or any(keyword in message for keyword in self.keywords):
+        # 현재 레코드에 플래그를 심어 재귀 호출 방지
+        record.__alert_in_progress = True
+
+        try:
+            level_name = record.levelname
+            message = self.format(record)
             tagged_message = f"{self.prefix} {message}".strip()
 
-            # 우선 해당 레벨에 맞는 채널 찾기
-            channel_info = self.alert_channels.get(level_name)
+            # 키워드 필터
+            if not self.keywords or any(k in message for k in self.keywords):
+                channel_info = self.alert_channels.get(level_name)
+                if not channel_info:
+                    default_info = self.alert_channels.get("default")
+                    if default_info and record.levelno >= default_info.get("level", logging.ERROR):
+                        channel_info = default_info
 
-            # 없으면 default 채널 사용
-            if not channel_info:
-                default_info = self.alert_channels.get("default")
+                if channel_info:
+                    # 단일 스레드로 알림 전송
+                    threading.Thread(
+                        target=self._send_alert_fire_and_forget,
+                        args=(level_name, tagged_message, channel_info),
+                        daemon=True
+                    ).start()
+        finally:
+            # 플래그 제거 (재사용 가능)
+            record.__alert_in_progress = False
 
-                if default_info and record.levelno >= default_info.get("level", logging.ERROR):
-                    channel_info = default_info
-            
-            # 채널 정보가 있으면 비동기 전송
-            if channel_info:
-                threading.Thread(target=self.send_alert, args=(level_name, tagged_message, channel_info)).start()
-
-    def send_alert(self, level_name, message, channel_info):
+    def _send_alert_fire_and_forget(self, level_name, message, channel_info):
+        logging.disable(logging.CRITICAL)  # 🔒 이 스레드에서 모든 로깅 차단
+        """
+        실제 알림 전송
+        """
         try:
-            channel = channel_info.get('channel')
-            config = channel_info.get('config', {})
+            channel = channel_info.get("channel")
+            config = channel_info.get("config", {})
 
-            if channel == 'slack' and 'webhook_url' in config:
+            if channel == "slack" and "webhook_url" in config:
                 payload = {"text": f":rotating_light: *{level_name}*\n{message}"}
-                requests.post(config['webhook_url'], data=json.dumps(payload), headers={'Content-Type': 'application/json'})
+                requests.post(
+                    config["webhook_url"],
+                    data=json.dumps(payload),
+                    headers={"Content-Type": "application/json"},
+                    timeout=5
+                )
 
-            elif channel == 'telegram' and 'bot_token' in config and 'chat_id' in config:
+            elif channel == "telegram" and "bot_token" in config and "chat_id" in config:
                 url = f"https://api.telegram.org/bot{config['bot_token']}/sendMessage"
-                payload = {"chat_id": config['chat_id'], "text": f"[{level_name}] {message}"}
-                requests.post(url, data=payload)
+                payload = {"chat_id": config["chat_id"], "text": f"[{level_name}] {message}"}
+                requests.post(url, data=payload, timeout=5)
 
-            elif channel == 'discord' and 'webhook_url' in config:
+            elif channel == "discord" and "webhook_url" in config:
                 payload = {"content": f"🚨 **{level_name}**\n{message}"}
-                requests.post(config['webhook_url'], data=json.dumps(payload), headers={'Content-Type': 'application/json'})
+                requests.post(
+                    config["webhook_url"],
+                    data=json.dumps(payload),
+                    headers={"Content-Type": "application/json"},
+                    timeout=5
+                )
+                
+        except Exception:
+            # 실패해도 무시
+            pass
 
-        except Exception as e:
-            print(f"[알림 전송 실패] {e}")
-
+        finally:
+            logging.disable(logging.NOTSET)  # 🔓 원상복구
+                    
 # 파일 핸들러 생성 함수
 def create_file_handler(level_name):
     os.makedirs("logs", exist_ok=True)
@@ -135,37 +176,71 @@ def create_file_handler(level_name):
 
     handler.setLevel(getattr(logging, level_name))
     handler.setFormatter(MicrosecondFormatter('[%(asctime)s] %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S.%f'))
-    handler.addFilter(LevelFilter(level_name))
     handler.addFilter(LevelFilter(level_name))  # 정확히 일치하는 레벨만 기록    
     return handler
 
 # 로거 초기화 함수
 def setup_logger(alert_channels=None, alert_keywords=[], alert_prefix='[hahaha@web01]'):
+    global logger # 전역 logger 객체를 사용함을 명시
+    global _LOGGER_INITIALIZED # 전역 플래그 사용 선언
+
+    # 🚨 [최종 수정] 로거 초기화가 이미 완료되었다면 즉시 반환
+    if _LOGGER_INITIALIZED:
+        return logger
+
+    # 1. 기존 핸들러 모두 제거 (가장 확실한 중복 방지책)
+    # logger.handlers 리스트를 순회하며 핸들러를 제거합니다.
+    for handler in list(logger.handlers): 
+        logger.removeHandler(handler)
+        # 핸들러를 닫아 리소스 해제 (특히 파일 핸들러의 경우 중요)
+        try:
+            handler.close()
+        except:
+            pass
+    
     logger.setLevel(logging.DEBUG)
+    logger.propagate = False   # ✅ 부모 로거로 이벤트 전파 방지
 
-    # 핸들러 중복 방지
-    if not logger.handlers:
-        # 콘솔 핸들러
-        console_handler = logging.StreamHandler()
-        console_handler.setFormatter(ColorFormatter('%(message)s', datefmt='%Y-%m-%d %H:%M:%S.%f'))
-        logger.addHandler(console_handler)
+    # 🔹 urllib3 로거 차단 (이 위치에 추가)
+    logging.getLogger("urllib3").propagate = False
+    logging.getLogger("urllib3").disabled = True
 
-        # 파일 핸들러
-        for level in ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']:
-            logger.addHandler(create_file_handler(level))
 
-        # 알림 핸들러
-        if alert_channels:
-            alert_handler = AlertHandler(alert_channels=alert_channels, keywords=alert_keywords, prefix=alert_prefix)
-            alert_handler.setFormatter(MicrosecondFormatter('[%(asctime)s] %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S.%f'))
-            logger.addHandler(alert_handler)
+    # 2. 콘솔 핸들러 등록
+    console_handler = logging.StreamHandler()
+    console_handler.setFormatter(ColorFormatter('%(message)s', datefmt='%Y-%m-%d %H:%M:%S.%f'))
+    logger.addHandler(console_handler)
 
-        logger.debug('디버그 메시지입니다.')
-        logger.info('Info 메시지입니다.')
-        logger.warning('경고 메시지입니다.')
-        logger.error('에러 발생! 메시지입니다.')
-        logger.critical('치명적인 오류! 메시지입니다.')
+    # 3. 파일 핸들러 등록
+    for level in ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']:
+        logger.addHandler(create_file_handler(level))
 
+    # 4. 알림 핸들러 등록
+    if alert_channels:
+        # AlertHandler 클래스는 이전 답변에서 단일 스레드로 수정된 버전 사용
+        alert_handler = AlertHandler(alert_channels=alert_channels, keywords=alert_keywords, prefix=alert_prefix)
+        alert_handler.setFormatter(MicrosecondFormatter('[%(asctime)s] %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S.%f'))
+        logger.addHandler(alert_handler)
+
+
+    # ✅ requests 내부 로그 억제
+    logging.getLogger("urllib3").setLevel(logging.WARNING)
+
+    # 테스트 로그 (setup_logger가 잘 작동했는지 확인용)
+    logger.debug('디버그 메시지입니다. (초기화 완료)')
+    logger.info('애플리케이션 시작 (초기화 완료)')
+    # ... (나머지 테스트 로그는 그대로 유지)
+
+    logger.debug('디버그 메시지입니다.')
+    logger.info('애플리케이션 시작')
+    logger.warning('경고 메시지입니다.')
+    logger.error('에러 발생! 메시지입니다.')
+    logger.critical('치명적인 오류! 메시지입니다.')
+
+
+    # 로거 설정 다 끝난 후
+    _LOGGER_INITIALIZED = True   # ✅ 이 줄 반드시 필요
+    
     return logger
 
 # 사용법 출력 함수
