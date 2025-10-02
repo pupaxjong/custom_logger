@@ -10,7 +10,8 @@ from custom_logger import setup_logger, logger
 import logging
 
 
-# 한 번만 설정. 아래 메신서별 초기화
+# 한 번만 설정. 아래 메신서별 초기화. 로그 레벨에 따라 다른 메신저 또는 다른 채널로 받고 싶을때
+  ddefault 만 잇으면 level 이상만 메신저로 알림 받음.
 alert_channels={
     "default": {
         "channel": "slack",
