@@ -75,6 +75,7 @@ import threading
 import json
 import requests
 
+
 class AlertHandler(logging.Handler):
     """
     알림 핸들러 (Slack, Telegram, Discord)
