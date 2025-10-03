@@ -93,6 +93,9 @@ class AlertHandler(logging.Handler):
         if getattr(record, "__alert_in_progress", False):
             return
 
+        if not threading.current_thread().is_alive():
+            return  # interpreter shutdown 중이면 무시
+
         # 현재 레코드에 플래그를 심어 재귀 호출 방지
         record.__alert_in_progress = True
 
