@@ -16,6 +16,9 @@ git submodule update --remote             # 서브모듈 최신 커밋으로 갱
 ```
 
 ### 서브모듈 추가
+콘솔에 level 별로 칼라로 남기기 위해서 만든것임.
+log 파일엔 칼라로 남겨지진 않음.
+
 - 서브모듈 추가후에 git submodule update --remote 를 사용하기 위해서 [.gitmodules] 파일에 [branch = main] 를 추가한다.
 ```sh
 git submodule add https://github.com/pupaxjong/custom_logger.git custom_logger
