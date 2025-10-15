@@ -1,6 +1,4 @@
-# custom_logger 서브모듈로 추가
-- [git 사용법 참고](https://github.com/pupaxjong/Tip/blob/master/git.md)   
-
+# [git 사용법 참고](https://github.com/pupaxjong/Tip/blob/master/git.md)   
 ### 서브모듈 관련 참고
 ```sh
 # 참고.
@@ -15,18 +13,20 @@ git submodule update --remote             # 서브모듈 최신 커밋으로 갱
 # git submodule update --init --recursive → 서브모듈 안에 또 다른 서브모듈이 있을 경우, 하위 서브모듈까지 모두 초기화함.
 ```
 
-### 서브모듈 추가
+<br>    
+
+# custom_logger
 콘솔에 level 별로 칼라로 남기기 위해서 만든것임.
 log 파일엔 칼라로 남겨지진 않음.
 
+
+### 서브모듈 추가
 - 서브모듈 추가후에 git submodule update --remote 를 사용하기 위해서 [.gitmodules] 파일에 [branch = main] 를 추가한다.
 ```sh
 git submodule add https://github.com/pupaxjong/custom_logger.git custom_logger
 ```
 
-<br> <br>   
 
-# custom_logger
 - 설치 라이버러리
 ```sh
 pip install colorama
