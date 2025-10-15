@@ -49,7 +49,8 @@ class ColorFormatter(MicrosecondFormatter):
         message = record.getMessage()
         if COLORAMA_AVAILABLE:
             color = {
-                'DEBUG': Fore.CYAN,
+                #'DEBUG': Fore.CYAN,
+                'DEBUG': Fore.WHITE,
                 'INFO': Fore.GREEN,
                 'WARNING': Fore.YELLOW,
                 'ERROR': Fore.RED,
@@ -282,3 +283,4 @@ def print_usage():
     print(")\n")
     print("logger.error(\"DB 오류 발생!\")       # 슬랙으로 비동기 전송")
     print("logger.critical(\"결제 실패!\")       # 텔레그램으로 비동기 전송\n")
+
