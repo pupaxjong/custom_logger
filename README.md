@@ -1,7 +1,7 @@
 # custom_logger 서브모듈로 추가
 - [git 사용법 참고](https://github.com/pupaxjong/Tip/blob/master/git.md)   
 
-### 서브모듈 추가
+### 서브모듈 관련 참고
 ```sh
 # 참고.
 git submodule add <URL> <경로>             # 서브모듈 추가
@@ -13,13 +13,12 @@ git submodule update --remote             # 서브모듈 최신 커밋으로 갱
 # 2. 서브모듈 디렉토리는 비어 있거나 .gitmodules 파일만 있고 코드가 없을때. 
 # git submodule update --init → 서브모듈을 초기화하고 체크아웃함. 즉, 서브모듈 디렉토리에 실제 코드가 생김.
 # git submodule update --init --recursive → 서브모듈 안에 또 다른 서브모듈이 있을 경우, 하위 서브모듈까지 모두 초기화함.
+```
 
-------------------------
-
-# 추가하기.
+### 서브모듈 추가
+- 서브모듈 추가후에 git submodule update --remote 를 사용하기 위해서 [.gitmodules] 파일에 [branch = main] 를 추가한다.
+```sh
 git submodule add https://github.com/pupaxjong/custom_logger.git custom_logger
-
-# git submodule update --remote 를 사용하기 위해서 [.gitmodules] 파일에 [branch = main] 를 추가한다.
 ```
 
 <br> <br>   
