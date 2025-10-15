@@ -1,5 +1,5 @@
 # custom_logger
--[git 서브모듈 추가 참고](https://github.com/pupaxjong/Tip/blob/master/git.md)   
+- [git 서브모듈 추가 참고](https://github.com/pupaxjong/Tip/blob/master/git.md)   
 
 ```sh
 # 설치 라이버러리
