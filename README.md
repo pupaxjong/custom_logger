@@ -1,6 +1,8 @@
 # custom_logger
-- 설치 라이버러리
-  - pip install colorama
+```sh
+# 설치 라이버러리
+pip install colorama
+```
 
 ```
 main.py 에 사용.
