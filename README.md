@@ -24,8 +24,8 @@ git submodule add https://github.com/pupaxjong/custom_logger.git custom_logger
 <br> <br>   
 
 # custom_logger
+- 설치 라이버러리
 ```sh
-# 설치 라이버러리
 pip install colorama
 ```
 
