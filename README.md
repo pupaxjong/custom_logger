@@ -42,7 +42,7 @@ pip install colorama
 main.py 에 사용.
 - 알림 받을 메신저 설정
 
-from custom_logger import setup_logger, logger
+from custom_logger.custom_logger import setup_logger, logger
 import logging
 
 
@@ -87,7 +87,7 @@ logger.critical("서버 다운됨")                     # ❌ 키워드 없음 �
 
 
 다른 py 파일에서 사용할때
-from custom_logger import logger
+from custom_logger.custom_logger import logger
 
 logger.debug("모듈 A에서 디버그 로그")
 ```
