@@ -49,7 +49,8 @@ class ColorFormatter(MicrosecondFormatter):
         message = record.getMessage()
         if COLORAMA_AVAILABLE:
             color = {
-                'DEBUG': Fore.CYAN,
+                #'DEBUG': Fore.CYAN,
+                'DEBUG': Fore.WHITE,
                 'INFO': Fore.GREEN,
                 'WARNING': Fore.YELLOW,
                 'ERROR': Fore.RED,
@@ -230,13 +231,10 @@ def setup_logger(alert_channels=None, alert_keywords=[], alert_prefix='[hahaha@w
     # ✅ requests 내부 로그 억제
     logging.getLogger("urllib3").setLevel(logging.WARNING)
 
-    # 테스트 로그 (setup_logger가 잘 작동했는지 확인용)
-    logger.debug('디버그 메시지입니다. (초기화 완료)')
-    logger.info('애플리케이션 시작 (초기화 완료)')
-    # ... (나머지 테스트 로그는 그대로 유지)
+    logger.info('========================================')
+    logger.info('애플리케이션 시작')
 
     logger.debug('디버그 메시지입니다.')
-    logger.info('애플리케이션 시작')
     logger.warning('경고 메시지입니다.')
     logger.error('에러 발생! 메시지입니다.')
     logger.critical('치명적인 오류! 메시지입니다.')
@@ -282,3 +280,4 @@ def print_usage():
     print(")\n")
     print("logger.error(\"DB 오류 발생!\")       # 슬랙으로 비동기 전송")
     print("logger.critical(\"결제 실패!\")       # 텔레그램으로 비동기 전송\n")
+
