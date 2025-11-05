@@ -182,7 +182,6 @@ def create_file_handler(level_name):
     handler.setLevel(getattr(logging, level_name))
     handler.setFormatter(MicrosecondFormatter('[%(asctime)s] %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S.%f'))
     handler.addFilter(LevelFilter(level_name))  # 정확히 일치하는 레벨만 기록
-    handler.flush = True  # flush 보장
     return handler
 
 # 로거 초기화 함수
