@@ -162,7 +162,7 @@ class AlertHandler(logging.Handler):
 
         finally:
             logging.disable(logging.NOTSET)  # 🔓 원상복구
-                    
+
 # 파일 핸들러 생성 함수
 def create_file_handler(level_name):
     os.makedirs("logs", exist_ok=True)
