@@ -168,14 +168,36 @@ class AlertHandler(logging.Handler):
 def create_file_handler(level_name):
     os.makedirs("logs", exist_ok=True)
 
+    # ------------------------------------------------------------------
+    # 🚨 [로그 유실 방지] TimedRotatingFileHandler를 상속받아 flush를 강제하는 클래스 정의
+    class FlushedTimedRotatingFileHandler(TimedRotatingFileHandler):
+        def emit(self, record):
+            # 1. 상위 클래스(TimedRotatingFileHandler)의 emit을 호출하여 파일에 기록
+            super().emit(record)
+            # 2. 강제로 버퍼를 비워 로그가 디스크에 즉시 기록되도록 합니다. (Live 모드 필수)
+            if self.stream:
+                try:
+                    self.stream.flush()
+                except Exception:
+                    # flush 실패는 무시 (파일 닫힘 등)
+                    pass
+    # ------------------------------------------------------------------
+        
     # 오늘의 로그는 error.txt, info.txt 등으로 저장됨
-    handler = TimedRotatingFileHandler(
+    # handler = TimedRotatingFileHandler(
+    #     filename=f'logs/{level_name.lower()}.txt',
+    #     when='midnight',
+    #     interval=1,
+    #     backupCount=7,
+    #     encoding='utf-8'
+    # )
+    handler = FlushedTimedRotatingFileHandler(
         filename=f'logs/{level_name.lower()}.txt',
         when='midnight',
         interval=1,
         backupCount=7,
         encoding='utf-8'
-    )
+    )    
 
     # 회전된 파일 이름: error.2025-10-02.txt
     handler.suffix = "%Y-%m-%d.txt"
