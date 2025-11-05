@@ -18,6 +18,7 @@ import requests
 import threading
 import time
 from logging.handlers import TimedRotatingFileHandler
+import atexit
 
 # 전역 로거 객체
 logger = logging.getLogger()
@@ -230,6 +231,17 @@ def setup_logger(alert_channels=None, alert_keywords=[], alert_prefix='[hahaha@w
 
     # ✅ requests 내부 로그 억제
     logging.getLogger("urllib3").setLevel(logging.WARNING)
+
+    # ------------------------------------------------
+    # 🚨 [핵심 수정] 애플리케이션 종료 시 안전하게 로깅 시스템을 닫습니다.
+    # nohup/백그라운드 환경에서 로그 버퍼가 플러시(flush)되지 않아 파일에 기록되지 않는 문제를 해결합니다.
+    try:
+        atexit.register(logging.shutdown)
+        logger.info('로깅 시스템 안전 종료 후크(atexit.register) 등록 완료')
+    except Exception as e:
+        logger.error(f'atexit.register 실패: {e}')
+        pass
+    # ------------------------------------------------    
 
     logger.info('========================================')
     logger.info('애플리케이션 시작')
